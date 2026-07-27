@@ -17,6 +17,12 @@ import EditCourse from './components/pages/account/courses/EditCourse'
 import EditLesson from './components/pages/account/courses/EditLesson'
 import LeaveRating from './components/pages/account/courses/LeaveRating'
 import Profile from './components/pages/account/Profile'
+import LearningPaths from './features/learning-paths/pages/LearningPaths'
+import LearningPathDetail from './features/learning-paths/pages/LearningPathDetail'
+import AdminPermissions from './components/pages/account/AdminPermissions'
+import SubmitProject from './features/submissions/pages/SubmitProject'
+import InstructorSubmissions from './features/submissions/pages/InstructorSubmissions'
+import CourseDiscussions from './features/discussions/pages/CourseDiscussions'
 
 function App() {
 
@@ -26,6 +32,9 @@ function App() {
         <Routes>
           <Route path='/' element={<Home />} />
           <Route path='/courses' element={<Courses />} />
+          <Route path='/learning-paths' element={<LearningPaths />} />
+          <Route path='/learning-paths/:slug' element={<LearningPathDetail />} />
+          <Route path='/courses/:id/discussions' element={<CourseDiscussions />} />
           <Route path='/detail/:id' element={<Detail />} />
           <Route path='/account/login' element={<Login />} />
           <Route path='/account/register' element={<Register />} />
@@ -61,6 +70,18 @@ function App() {
             </RequireAuth>
           } />
 
+          <Route path='/account/submit-project' element={
+            <RequireAuth>
+              <SubmitProject />
+            </RequireAuth>
+          } />
+
+          <Route path='/account/submissions' element={
+            <RequireAuth>
+              <InstructorSubmissions />
+            </RequireAuth>
+          } />
+
           <Route path='/account/dashboard' element={
             <RequireAuth>
               <Dashboard />
@@ -82,6 +103,12 @@ function App() {
           <Route path='/account/courses/edit-lesson/:id/:courseId' element={
             <RequireAuth>
               <EditLesson />
+            </RequireAuth>
+          } />
+
+          <Route path='/account/admin/permissions' element={
+            <RequireAuth>
+              <AdminPermissions />
             </RequireAuth>
           } />
 

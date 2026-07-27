@@ -3,9 +3,9 @@ import UserSidebar from '../../common/UserSidebar'
 import CourseEnrolled from '../../common/CourseEnrolled'
 import Layout from '../../common/Layout'
 import Loading from '../../common/Loading'
-import { apiUrl, token } from '../../common/Config'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { apiRequest } from '../../../lib/api'
 
 const MyLearning = () => {
   const [enrollments, setEnrollments] = useState([])
@@ -14,15 +14,7 @@ const MyLearning = () => {
   const fetchEnrollments = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`${apiUrl}/enrollments`, {
-        method: 'GET',
-        headers: {
-          'Content-type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        }
-      })
-      const result = await response.json()
+      const result = await apiRequest('/enrollments')
       
       if (result.status === 200) {
         setEnrollments(result.data)

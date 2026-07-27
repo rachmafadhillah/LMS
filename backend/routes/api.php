@@ -1,10 +1,16 @@
 <?php
 
+use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\front\AccountController;
+use App\Http\Controllers\front\BookmarkController;
+use App\Http\Controllers\front\CertificateController;
 use App\Http\Controllers\front\ChapterController;
 use App\Http\Controllers\front\CourseController;
+use App\Http\Controllers\front\CourseDiscussionController;
+use App\Http\Controllers\front\CourseSubmissionController;
 use App\Http\Controllers\front\HomeController;
 use App\Http\Controllers\front\LessonController;
+use App\Http\Controllers\front\LearningPathController;
 use App\Http\Controllers\front\OutcomeController;
 use App\Http\Controllers\front\RequirementController;
 use Illuminate\Http\Request;
@@ -19,6 +25,9 @@ Route::get('/fetch-languages', [HomeController::class, 'fetchLanguages']);
 Route::get('/fetch-featured-courses', [HomeController::class, 'fetchFeaturedCourses']);
 Route::get('/fetch-courses', [HomeController::class, 'courses']);
 Route::get('/fetch-course/{id}', [HomeController::class, 'course']);
+Route::get('/courses/{courseId}/discussions', [CourseDiscussionController::class, 'index']);
+Route::get('/learning-paths', [LearningPathController::class, 'index']);
+Route::get('/learning-paths/{slug}', [LearningPathController::class, 'show']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -26,45 +35,66 @@ Route::get('/user', function (Request $request) {
 
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
-    Route::post('/courses', [CourseController::class, 'store']);
-    Route::get('/courses/meta-data', [CourseController::class, 'metaData']);
-    Route::get('/courses/{id}', [CourseController::class, 'show']);
-    Route::put('/courses/{id}', [CourseController::class, 'update']);
-    Route::post('/save-course-image/{id}', [CourseController::class, 'saveCourseImage']);
-    Route::post('/change-course-status/{id}', [CourseController::class, 'changeStatus']);
-    Route::delete('/courses/{id}', [CourseController::class, 'destroy']);
+    Route::middleware('role:admin')->prefix('admin')->group(function () {
+        Route::get('/roles-permissions', [RolePermissionController::class, 'index']);
+        Route::post('/permissions', [RolePermissionController::class, 'storePermission']);
+        Route::put('/roles/{role}/permissions', [RolePermissionController::class, 'updateRolePermissions']);
+        Route::put('/users/{user}/role', [RolePermissionController::class, 'updateUserRole']);
+    });
 
-    // Outcome routes
-    Route::get('/outcomes', [OutcomeController::class, 'index']);
-    Route::post('/outcomes', [OutcomeController::class, 'store']);
-    Route::put('/outcomes/{id}', [OutcomeController::class, 'update']);
-    Route::delete('/outcomes/{id}', [OutcomeController::class, 'destroy']);
-    Route::post('/sort-outcomes', [OutcomeController::class, 'sortOutcomes']);
+Route::middleware('role:instructor,admin')->group(function () {
+        Route::post('/courses', [CourseController::class, 'store']);
+        Route::get('/courses/meta-data', [CourseController::class, 'metaData']);
+        Route::get('/courses/{id}', [CourseController::class, 'show']);
+        Route::put('/courses/{id}', [CourseController::class, 'update']);
+        Route::post('/save-course-image/{id}', [CourseController::class, 'saveCourseImage']);
+        Route::post('/change-course-status/{id}', [CourseController::class, 'changeStatus']);
+        Route::delete('/courses/{id}', [CourseController::class, 'destroy']);
 
-    // Requirement routes
-    Route::get('/requirements', [RequirementController::class, 'index']);
-    Route::post('/requirements', [RequirementController::class, 'store']);
-    Route::put('/requirements/{id}', [RequirementController::class, 'update']);
-    Route::delete('/requirements/{id}', [RequirementController::class, 'destroy']);
-    Route::post('/sort-requirements', [RequirementController::class, 'sortRequirements']);
+        Route::get('/my-courses', [AccountController::class, 'courses']);
 
-    // Chapter routes
-    Route::get('/chapters', [ChapterController::class, 'index']);
-    Route::post('/chapters', [ChapterController::class, 'store']);
-    Route::put('/chapters/{id}', [ChapterController::class, 'update']);
-    Route::delete('/chapters/{id}', [ChapterController::class, 'destroy']);
-    Route::post('/sort-chapters', [ChapterController::class, 'sortChapters']);
+        Route::get('/instructor/submissions', [CourseSubmissionController::class, 'instructorSubmissions']);
+        Route::put('/submissions/{id}/review', [CourseSubmissionController::class, 'review']);
 
-    // Lesson Routes
-    Route::post('/lessons', [LessonController::class, 'store']);
-    Route::get('/lessons/{id}', [LessonController::class, 'show']);
-    Route::put('/lessons/{id}', [LessonController::class, 'update']);
-    Route::delete('/lessons/{id}', [LessonController::class, 'destroy']);
-    Route::post('/save-lesson-video/{id}', [LessonController::class, 'saveVideo']);
-    Route::post('/sort-lessons', [LessonController::class, 'sortLessons']);
+        // Outcome routes
+        Route::get('/outcomes', [OutcomeController::class, 'index']);
+        Route::post('/outcomes', [OutcomeController::class, 'store']);
+        Route::put('/outcomes/{id}', [OutcomeController::class, 'update']);
+        Route::delete('/outcomes/{id}', [OutcomeController::class, 'destroy']);
+        Route::post('/sort-outcomes', [OutcomeController::class, 'sortOutcomes']);
 
-    Route::get('/my-courses', [AccountController::class, 'courses']);
+        // Requirement routes
+        Route::get('/requirements', [RequirementController::class, 'index']);
+        Route::post('/requirements', [RequirementController::class, 'store']);
+        Route::put('/requirements/{id}', [RequirementController::class, 'update']);
+        Route::delete('/requirements/{id}', [RequirementController::class, 'destroy']);
+        Route::post('/sort-requirements', [RequirementController::class, 'sortRequirements']);
+
+        // Chapter routes
+        Route::get('/chapters', [ChapterController::class, 'index']);
+        Route::post('/chapters', [ChapterController::class, 'store']);
+        Route::put('/chapters/{id}', [ChapterController::class, 'update']);
+        Route::delete('/chapters/{id}', [ChapterController::class, 'destroy']);
+        Route::post('/sort-chapters', [ChapterController::class, 'sortChapters']);
+
+        // Lesson Routes
+        Route::post('/lessons', [LessonController::class, 'store']);
+        Route::get('/lessons/{id}', [LessonController::class, 'show']);
+        Route::put('/lessons/{id}', [LessonController::class, 'update']);
+        Route::delete('/lessons/{id}', [LessonController::class, 'destroy']);
+        Route::post('/save-lesson-video/{id}', [LessonController::class, 'saveVideo']);
+        Route::post('/sort-lessons', [LessonController::class, 'sortLessons']);
+    });
+
     Route::get('/enrollments', [AccountController::class, 'enrollments']);
+    Route::post('/courses/{courseId}/discussions', [CourseDiscussionController::class, 'store']);
+    Route::get('/submissions', [CourseSubmissionController::class, 'mySubmissions']);
+    Route::post('/submissions', [CourseSubmissionController::class, 'store']);
+    Route::get('/continue-learning', [AccountController::class, 'continueLearning']);
+    Route::get('/bookmarks', [BookmarkController::class, 'index']);
+    Route::post('/bookmarks/toggle', [BookmarkController::class, 'toggle']);
+    Route::post('/certificates/issue', [CertificateController::class, 'issue']);
+    Route::get('/certificates/{courseId}', [CertificateController::class, 'show']);
     Route::post('/enroll-course', [HomeController::class, 'enroll']);
     Route::get('/enroll/{id}', [AccountController::class, 'course']);
     Route::post('/save-activity', [AccountController::class, 'saveUserActivity']);
@@ -74,3 +104,5 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('/update-user', [AccountController::class, 'updateUser']);
     Route::post('/update-password', [AccountController::class, 'updatePassword']);
 });
+
+

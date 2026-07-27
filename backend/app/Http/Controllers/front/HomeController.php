@@ -108,9 +108,15 @@ class HomeController extends Controller
             $sortArr = ['asc', 'desc'];
             if (in_array($request->sort, $sortArr)) {
                 $courses = $courses->orderBy('created_at', $request->sort);
+            } elseif ($request->sort === 'rating') {
+                $courses = $courses->orderByDesc('reviews_sum_rating');
+            } elseif ($request->sort === 'popular') {
+                $courses = $courses->orderByDesc('enrollments_count');
             } else {
-                $course = $courses->orderBy('created_at', 'DESC');
+                $courses = $courses->orderBy('created_at', 'DESC');
             }
+        } else {
+            $courses = $courses->orderBy('created_at', 'DESC');
         }
 
         $courses = $courses->get();

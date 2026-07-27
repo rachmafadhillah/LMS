@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import BookmarkButton from '../../features/bookmarks/components/BookmarkButton'
 
 const Course = ({ course, customClasses }) => {
   // Fallback pengaman untuk mendeteksi string kosong atau null pada url gambar
@@ -25,6 +26,7 @@ const Course = ({ course, customClasses }) => {
               {course.level.name}
             </span>
           )}
+          <BookmarkButton courseId={course.id} initialBookmarked={course.is_bookmarked || false} />
         </div>
 
         {/* Konten Utama Informasi Kursus */}
@@ -77,6 +79,12 @@ const Course = ({ course, customClasses }) => {
                 Read More
               </Link>
             </div>
+            <Link
+              to={`/courses/${course.id}/discussions`}
+              className="btn btn-outline-primary btn-sm px-3 py-2 fw-semibold rounded-3"
+            >
+              Q&A
+            </Link>
 
           </div>
         </div>

@@ -35,6 +35,8 @@ const Login = () => {
           name: result.name,
           id: result.id,
           token: result.token,
+          role: result.role,
+          permissions: result.permissions || [],
         }
         localStorage.setItem('userInfoLms', JSON.stringify(userInfo));
         login(userInfo);

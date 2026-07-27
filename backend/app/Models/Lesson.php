@@ -15,4 +15,8 @@ class Lesson extends Model
 
         return asset('uploads/course/videos/'.$this->video);
     }
+
+    public function chapter() {
+        return $this->belongsTo(Chapter::class);
+    }
 }

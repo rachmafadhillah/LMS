@@ -10,6 +10,7 @@ use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\Review;
 use App\Models\User;
+use App\Services\CourseProgressService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -17,6 +18,10 @@ use Illuminate\Support\Facades\Validator;
 
 class AccountController extends Controller
 {
+    public function __construct(private CourseProgressService $courseProgressService)
+    {
+    }
+
     public function register(Request $request)
     {
 
@@ -39,7 +44,9 @@ class AccountController extends Controller
         $user->name = $request->name;
         $user->email = $request->email;
         $user->password = Hash::make($request->password);
+        $user->role = 'student';
         $user->save();
+        $user->assignRole('student');
 
         return response()->json([
             'status' => 200,
@@ -73,6 +80,8 @@ class AccountController extends Controller
                 'token' => $token,
                 'name' => $user->name,
                 'id' => Auth::user()->id,
+                'role' => $user->roles->first()?->name ?? $user->role,
+                'permissions' => $user->getAllPermissions()->pluck('name')->values(),
 
             ], 200);
         } else {
@@ -116,11 +125,67 @@ class AccountController extends Controller
         $enrollments->map(function ($enrollment) {
             $enrollment->course->rating = $enrollment->course->reviews_count > 0 ?
                 number_format(($enrollment->course->reviews_sum_rating / $enrollment->course->reviews_count), 1) : "0.0";
+
+            $progress = $this->courseProgressService->calculate($enrollment->course->id, $enrollment->user_id);
+            $enrollment->course->progress = $progress['percentage'];
+            $enrollment->course->completed_lessons_count = $progress['completed_lessons_count'];
+            $enrollment->course->total_lessons_count = $progress['total_lessons_count'];
         });
 
         return response()->json([
             'status' => 200,
             'data' => $enrollments
+        ], 200);
+    }
+
+    public function continueLearning(Request $request)
+    {
+        $activity = Activity::where('user_id', $request->user()->id)
+            ->where('is_last_watched', 'yes')
+            ->with(['course.level', 'chapter', 'lesson'])
+            ->latest('updated_at')
+            ->first();
+
+        if ($activity == null) {
+            $enrollment = Enrollment::where('user_id', $request->user()->id)
+                ->with(['course.level'])
+                ->latest('updated_at')
+                ->first();
+
+            if ($enrollment == null) {
+                return response()->json([
+                    'status' => 200,
+                    'data' => null
+                ], 200);
+            }
+
+            $progress = $this->courseProgressService->calculate($enrollment->course_id, $request->user()->id);
+
+            return response()->json([
+                'status' => 200,
+                'data' => [
+                    'course' => $enrollment->course,
+                    'chapter' => null,
+                    'lesson' => null,
+                    'progress' => $progress['percentage'],
+                    'completed_lessons_count' => $progress['completed_lessons_count'],
+                    'total_lessons_count' => $progress['total_lessons_count'],
+                ]
+            ], 200);
+        }
+
+        $progress = $this->courseProgressService->calculate($activity->course_id, $request->user()->id);
+
+        return response()->json([
+            'status' => 200,
+            'data' => [
+                'course' => $activity->course,
+                'chapter' => $activity->chapter,
+                'lesson' => $activity->lesson,
+                'progress' => $progress['percentage'],
+                'completed_lessons_count' => $progress['completed_lessons_count'],
+                'total_lessons_count' => $progress['total_lessons_count'],
+            ]
         ], 200);
     }
 
@@ -221,7 +286,7 @@ class AccountController extends Controller
         ])
             ->count();
 
-        $progress = round(($completedLessonsCount / $totalLessons) * 100);
+        $progress = $totalLessons > 0 ? round(($completedLessonsCount / $totalLessons) * 100) : 0;
 
         return response()->json([
             'status' => 200,
@@ -309,7 +374,7 @@ class AccountController extends Controller
 
         $totalLessons = $course->chapters->sum('lessons_count');
 
-        $progress = round(($completedLessonsCount / $totalLessons) * 100);
+        $progress = $totalLessons > 0 ? round(($completedLessonsCount / $totalLessons) * 100) : 0;
 
         return response()->json([
             'status' => 200,
@@ -367,7 +432,8 @@ class AccountController extends Controller
 
         return response()->json([
             'status' => 200,
-            'data' => $user
+            'data' => $user->load('roles.permissions'),
+            'permissions' => $user->getAllPermissions()->pluck('name')->values()
         ], 200);
     }
 
@@ -437,3 +503,5 @@ class AccountController extends Controller
         ], 200);
     }
 }
+
+

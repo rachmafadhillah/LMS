@@ -1,12 +1,30 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import toast from 'react-hot-toast'
+import { apiRequest } from '../../lib/api'
 
 const CourseEnrolled = ({ enrollment }) => {
+  const progress = enrollment.course.progress || 0;
   // Fallback untuk mendeteksi string kosong atau gambar null
   const hasImage = enrollment.course.course_small_image && enrollment.course.course_small_image !== '';
   const imageUrl = hasImage 
     ? enrollment.course.course_small_image 
     : `https://placehold.co/600x380?text=${encodeURIComponent(enrollment.course.title)}`;
+
+  const issueCertificate = async () => {
+    try {
+      const result = await apiRequest('/certificates/issue', {
+        method: 'POST',
+        body: JSON.stringify({ course_id: enrollment.course_id }),
+      })
+
+      if (result.status === 200) {
+        toast.success(`Certificate ready: ${result.data.certificate_number}`)
+      }
+    } catch (error) {
+      toast.error(error.message || 'Certificate is not ready yet')
+    }
+  }
 
   return (
     <div className='card border-0 shadow-sm rounded-4 bg-white overflow-hidden h-100 d-flex flex-column'>
@@ -31,6 +49,26 @@ const CourseEnrolled = ({ enrollment }) => {
         <h5 className="card-title fw-bold text-dark lh-base mb-2 text-line-clamp-2">
           {enrollment.course.title}
         </h5>
+
+        <div className="mb-3">
+          <div className="d-flex justify-content-between align-items-center mb-1">
+            <span className="text-muted small fw-medium">Progress</span>
+            <span className="text-dark small fw-bold">{progress}%</span>
+          </div>
+          <div className="progress rounded-pill bg-light" style={{ height: '8px' }}>
+            <div
+              className="progress-bar bg-success rounded-pill"
+              role="progressbar"
+              style={{ width: `${progress}%` }}
+              aria-valuenow={progress}
+              aria-valuemin="0"
+              aria-valuemax="100"
+            ></div>
+          </div>
+          <div className="text-muted small mt-1">
+            {enrollment.course.completed_lessons_count || 0} of {enrollment.course.total_lessons_count || 0} lessons completed
+          </div>
+        </div>
         
         {/* Baris Meta Statistik */}
         <div className="d-flex align-items-center gap-3 mt-auto mb-3 text-muted small">
@@ -56,7 +94,7 @@ const CourseEnrolled = ({ enrollment }) => {
 
       {/* Area Tombol Aksi Bawah */}
       <div className="card-footer bg-transparent border-top border-light px-4 py-3">
-        <div className="d-flex justify-content-between align-items-center gap-2">
+        <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
           <Link 
             to={`/account/watch-course/${enrollment.course_id}`} 
             className="btn btn-primary btn-sm px-3 py-2 fw-semibold rounded-3 shadow-sm flex-grow-1 text-center"
@@ -69,6 +107,27 @@ const CourseEnrolled = ({ enrollment }) => {
           >
             Leave Rating
           </Link>
+          <Link
+            to="/account/submit-project"
+            className="btn btn-outline-primary btn-sm px-3 py-2 fw-semibold rounded-3 text-nowrap"
+          >
+            Submit Project
+          </Link>
+          <Link
+            to={`/courses/${enrollment.course_id}/discussions`}
+            className="btn btn-outline-dark btn-sm px-3 py-2 fw-semibold rounded-3 text-nowrap"
+          >
+            Q&A
+          </Link>
+          {progress >= 100 && (
+            <button
+              type="button"
+              className="btn btn-success btn-sm px-3 py-2 fw-semibold rounded-3 shadow-sm text-nowrap"
+              onClick={issueCertificate}
+            >
+              Certificate
+            </button>
+          )}
         </div>
       </div>
 
