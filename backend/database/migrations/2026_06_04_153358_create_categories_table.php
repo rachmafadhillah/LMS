@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->integer('status')->default(1);
+            $table->integer('status')->default(1); // Status kategori (Default: 1 / Aktif)
             $table->timestamps();
         });
     }
